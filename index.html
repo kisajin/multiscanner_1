@@ -68,6 +68,7 @@
   <div class="button-container">
     <button id="scanBtn" disabled>1回スキャン（登録）</button>
     <button id="searchBtn" disabled>探す（連続スキャン）</button>
+    <button id="stopBtn" disabled>停止</button>
   </div>
 
   <!-- ZXing WASM -->
@@ -88,6 +89,8 @@
     let targetCode = null;   // 登録したコード
     let searchMode = false;  // 探すモード
     let scanning = false;    // 連続スキャン中かどうか
+    let stopRequested = false; // ループを停止させるフラグ
+
 
     getZXingModule().then(() => console.log("ZXing ready"));
 
@@ -105,10 +108,14 @@
 
     // 1回スキャンして targetCode を登録
     scanBtn.addEventListener("click", async () => {
-      scanUntilFound()
+      stopRequested = false;
+      scanUntilFound();
+      stopBtn.disabled = false;
     });
 
     async function scanUntilFound() {
+      if (stopRequested) return;   // ★ 停止要求があれば終了
+      
       const w = video.videoWidth;
       const h = video.videoHeight;
     
@@ -127,8 +134,10 @@
       if (results.length === 0) {
         resultEl.textContent = "結果: 見つかりません…再スキャン中";
     
-        // ★ 100ms 後に再スキャン（再帰）
-        setTimeout(scanUntilFound, 100);
+        // ★ 停止要求がなければ、100ms 後に再スキャン（再帰）
+        if (!stopRequested) {
+          setTimeout(scanUntilFound, 100);
+        }
         return;
       }
     
@@ -141,7 +150,7 @@
     
     // 連続スキャン関数
     async function continuousScan() {
-      if (!scanning) return;
+      if (!scanning || stopRequested) return;  // ★ 停止要求があれば終了
 
       const w = video.videoWidth;
       const h = video.videoHeight;
@@ -204,13 +213,23 @@
         return;
       }
 
+      stopRequested = false;
       searchMode = true;
       scanning = true;
-
+      stopBtn.disabled = false;
+      
       resultEl.textContent = "探しています: " + targetCode;
 
       continuousScan();
     });
+
+    // イメージの読取を停止させる
+    stopBtn.addEventListener("click", () => {
+      stopRequested = true;
+      scanning = false;     // 連続スキャン停止
+      resultEl.textContent = "停止しました";
+    });
+
   </script>
 </body>
 </html>
