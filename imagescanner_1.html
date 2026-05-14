@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Image Scanner (zxing-wasm 3.0.3 iife)</title>
+  <style>
+    body {
+        font-family: sans-serif;
+        margin: 0;
+        padding: 10px;
+        background-color: #f9f9f9;
+      }
+
+    video { width: 100%; 
+            max-width: 800px;
+      }
+    
+    .button-container{
+        display: flex;
+        justify-content: center; 
+      }
+
+    button {
+        width: 100%;
+        padding: 12px;
+        margin: 10px;
+        font-size: 1rem;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+    
+    #barcode,
+    #result {
+        margin-top: 12px;
+        text-align: center;
+        font-weight: bold;
+        font-size: 1rem;
+      }
+
+  </style>
+</head>
+<body>
+  <h1>イメージスキャナー</h1>
+  <button id="startBtn">カメラ開始</button>
+
+  <div id="result">結果: まだ読み取っていません</div>
+  <div>  
+    <video id="video" playsinline></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+  </div>
+　<div class = "button-container">
+    <button id="scanBtn" disabled>1回スキャン</button>
+    <button id="searchBtn" disabled>探す</button>
+  </div>
+  
+  
+
+  <!-- ★ IIFE 版を読み込む -->
+  <script src="https://cdn.jsdelivr.net/npm/zxing-wasm@3.0.3/dist/iife/reader/index.min.js"></script>
+
+  <script>
+    const { readBarcodesFromImageData, getZXingModule } = ZXingWASM;
+
+    const startBtn = document.getElementById("startBtn");
+    const scanBtn  = document.getElementById("scanBtn");
+    const video    = document.getElementById("video");
+    const canvas   = document.getElementById("canvas");
+    const resultEl = document.getElementById("result");
+
+    let stream = null;
+
+    let targetCode = null;   // scanBtn で読み取った値
+    let searchMode = false;  // searchBtn を押したら true
+
+
+    getZXingModule().then(() => console.log("ZXing ready"));
+
+    startBtn.addEventListener("click", async () => {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" }
+      });
+      video.srcObject = stream;
+      await video.play();
+      scanBtn.disabled = false;
+    });
+
+    scanBtn.addEventListener("click", async () => {
+      const w = video.videoWidth;
+      const h = video.videoHeight;
+
+      canvas.width = w;
+      canvas.height = h;
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, w, h);
+
+      const imageData = ctx.getImageData(0, 0, w, h);
+
+      const results = await readBarcodesFromImageData(imageData, {
+        formats: ["MicroQRCode", "Codabar", "ITF", "QRCode"]
+      });
+
+      if (results.length === 0) {
+        resultEl.textContent = "結果: 読み取れませんでした";
+      } else {
+        targetCode = results[0].text;   // ← ★ここで保存
+        resultEl.textContent = "登録: " + targetCode;
+        searchBtn.disabled = false;     // ← 探すボタンを有効化
+      }
+    });
+
+    searchBtn.addEventListener("click", () => {
+      if (!targetCode) {
+        alert("先にスキャンして登録してください");
+        return;
+      }
+      searchMode = true;
+      resultEl.textContent = "探しています: " + targetCode;
+
+      if (searchMode && results.length > 0) {
+      
+        const code = results[0];
+
+        if (code.text === targetCode) {
+          // ★ 赤枠を描く
+          ctx.strokeStyle = "red";
+          ctx.lineWidth = 8;
+
+          const box = code.position;  // ZXing が返す座標
+          if (box) {
+            ctx.beginPath();
+            ctx.moveTo(box.topLeft.x, box.topLeft.y);
+            ctx.lineTo(box.topRight.x, box.topRight.y);
+            ctx.lineTo(box.bottomRight.x, box.bottomRight.y);
+            ctx.lineTo(box.bottomLeft.x, box.bottomLeft.y);
+            ctx.closePath();
+            ctx.stroke();
+          }
+
+          resultEl.textContent = "一致!: " + targetCode;
+          searchMode = false;  // 1回で終了
+        }
+      }
+
+    });
+
+
+  </script>
+</body>
+</html>
