@@ -105,30 +105,40 @@
 
     // 1回スキャンして targetCode を登録
     scanBtn.addEventListener("click", async () => {
+      scanUntilFound()
+    });
+
+    async function scanUntilFound() {
       const w = video.videoWidth;
       const h = video.videoHeight;
-
+    
       canvas.width = w;
       canvas.height = h;
-
+    
       const ctx = canvas.getContext("2d");
       ctx.drawImage(video, 0, 0, w, h);
-
+    
       const imageData = ctx.getImageData(0, 0, w, h);
-
+    
       const results = await readBarcodesFromImageData(imageData, {
         formats: ["MicroQRCode", "Codabar", "ITF", "QRCode"]
       });
-
+    
       if (results.length === 0) {
-        resultEl.textContent = "結果: 読み取れませんでした";
-      } else {
-        targetCode = results[0].text;
-        resultEl.textContent = "登録: " + targetCode;
-        searchBtn.disabled = false;
+        resultEl.textContent = "結果: 見つかりません…再スキャン中";
+    
+        // ★ 100ms 後に再スキャン（再帰）
+        setTimeout(scanUntilFound, 100);
+        return;
       }
-    });
+    
+      // ★ 見つかった！
+      targetCode = results[0].text;
+      resultEl.textContent = "登録: " + targetCode;
+      searchBtn.disabled = false;
+    }
 
+    
     // 連続スキャン関数
     async function continuousScan() {
       if (!scanning) return;
