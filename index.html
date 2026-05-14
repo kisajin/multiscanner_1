@@ -14,12 +14,17 @@
 
     video { width: 100%; 
             max-width: 800px;
+            display: block;
       }
     
     canvas { 
-        width: 100%;
-        max-width: 800px;
-    }
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          max-width: 800px;
+          pointer-events: none; /* ← クリックを通す */
+      }
 
     .button-container{
         display: flex;
@@ -52,11 +57,11 @@
 
   <div id="result">結果: まだ読み取っていません</div>
 
-  <div>  
+  <div id="camera-area" style="position: relative; width:100%; max-width:800px;">
     <video id="video" playsinline></video>
     <canvas id="canvas"></canvas>
   </div>
-
+  
   <div class="button-container">
     <button id="scanBtn" disabled>1回スキャン（登録）</button>
     <button id="searchBtn" disabled>探す（連続スキャン）</button>
