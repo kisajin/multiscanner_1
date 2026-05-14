@@ -11,7 +11,10 @@
         padding: 10px;
         background-color: #f9f9f9;
       }
-
+    
+    .hidden { display: none; }
+    .visible { display: block; }
+    
     video { width: 100%; 
             max-width: 800px;
             display: block;
@@ -57,7 +60,7 @@
 
   <div id="result">結果: まだ読み取っていません</div>
 
-  <div id="camera-area" style="position: relative; width:100%; max-width:800px;">
+  <div id="camera-area" class="hidden" style="position: relative; width:100%; max-width:800px;">
     <video id="video" playsinline></video>
     <canvas id="canvas"></canvas>
   </div>
@@ -96,6 +99,8 @@
       video.srcObject = stream;
       await video.play();
       scanBtn.disabled = false;
+      const target = document.getElementById("camera-area");
+      target.classList.toggle("visible"); // クラスを切り替え
     });
 
     // 1回スキャンして targetCode を登録
