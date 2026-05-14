@@ -73,7 +73,7 @@
 
     let stream = null;
     
-    let scanning = false;
+    let scanning = false;    // 連続スキャン中かどうか
     let targetCode = null;   // scanBtn で読み取った値
     let searchMode = false;  // searchBtn を押したら true
 
@@ -142,7 +142,7 @@
     });
 
     async function continuousScan() {
-      if (!scanning) return;  // 停止フラグ
+      if (!scanning) return;
     
       const w = video.videoWidth;
       const h = video.videoHeight;
@@ -159,20 +159,18 @@
         formats: ["MicroQRCode", "Codabar", "ITF", "QRCode"]
       });
     
-      // ★ 結果がある場合
       if (results.length > 0) {
         const code = results[0];
-    
-        // 通常表示
         resultEl.textContent = "スキャン中: " + code.text;
     
-        // ★ 探すモード中 & 一致したら赤枠
+        // ★ 一致したら赤枠を描いて停止
         if (searchMode && code.text === targetCode) {
-          ctx.strokeStyle = "red";
-          ctx.lineWidth = 8;
     
           const box = code.position;
           if (box) {
+            ctx.strokeStyle = "red";
+            ctx.lineWidth = 8;
+    
             ctx.beginPath();
             ctx.moveTo(box.topLeft.x, box.topLeft.y);
             ctx.lineTo(box.topRight.x, box.topRight.y);
@@ -184,19 +182,19 @@
     
           resultEl.textContent = "一致!: " + targetCode;
     
-          // ★ 一致したら探すモード終了
-          searchMode = false;
+          // ★ ここで止める（赤枠が残る）
           scanning = false;
+          searchMode = false;
           return;
         }
       } else {
         resultEl.textContent = "スキャン中...";
       }
     
-      // ★ 次のフレームで再実行（ループ）
+      // ★ 次のフレームへ
       requestAnimationFrame(continuousScan);
     }
-    
+
 
 
     
