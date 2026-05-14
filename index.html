@@ -72,7 +72,8 @@
     const resultEl = document.getElementById("result");
 
     let stream = null;
-
+    
+    let scanning = false;
     let targetCode = null;   // scanBtn で読み取った値
     let searchMode = false;  // searchBtn を押したら true
 
@@ -140,19 +141,78 @@
     
     });
 
+    async function continuousScan() {
+      if (!scanning) return;  // 停止フラグ
+    
+      const w = video.videoWidth;
+      const h = video.videoHeight;
+    
+      canvas.width = w;
+      canvas.height = h;
+    
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, w, h);
+    
+      const imageData = ctx.getImageData(0, 0, w, h);
+    
+      const results = await readBarcodesFromImageData(imageData, {
+        formats: ["MicroQRCode", "Codabar", "ITF", "QRCode"]
+      });
+    
+      // ★ 結果がある場合
+      if (results.length > 0) {
+        const code = results[0];
+    
+        // 通常表示
+        resultEl.textContent = "スキャン中: " + code.text;
+    
+        // ★ 探すモード中 & 一致したら赤枠
+        if (searchMode && code.text === targetCode) {
+          ctx.strokeStyle = "red";
+          ctx.lineWidth = 8;
+    
+          const box = code.position;
+          if (box) {
+            ctx.beginPath();
+            ctx.moveTo(box.topLeft.x, box.topLeft.y);
+            ctx.lineTo(box.topRight.x, box.topRight.y);
+            ctx.lineTo(box.bottomRight.x, box.bottomRight.y);
+            ctx.lineTo(box.bottomLeft.x, box.bottomLeft.y);
+            ctx.closePath();
+            ctx.stroke();
+          }
+    
+          resultEl.textContent = "一致!: " + targetCode;
+    
+          // ★ 一致したら探すモード終了
+          searchMode = false;
+          scanning = false;
+          return;
+        }
+      } else {
+        resultEl.textContent = "スキャン中...";
+      }
+    
+      // ★ 次のフレームで再実行（ループ）
+      requestAnimationFrame(continuousScan);
+    }
+    
+
+
+    
     searchBtn.addEventListener("click", () => {
       if (!targetCode) {
         alert("先にスキャンして登録してください");
         return;
       }
+    
       searchMode = true;
+      scanning = true;
+    
       resultEl.textContent = "探しています: " + targetCode;
-      
-      // 自動でスキャンを実行
-      scanBtn.click();
-
+    
+      continuousScan();  // ★ 連続スキャン開始
     });
-
 
   </script>
 </body>
