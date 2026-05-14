@@ -197,7 +197,7 @@
 
           scanning = false;
           searchMode = false;
-          return;
+          //return;
         }
       } else {
         resultEl.textContent = "スキャン中...";
@@ -227,6 +227,12 @@
     stopBtn.addEventListener("click", () => {
       stopRequested = true;
       scanning = false;     // 連続スキャン停止
+      searchMode = false;
+
+      // ★ canvas をクリア
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
       resultEl.textContent = "停止しました";
     });
 
