@@ -33,14 +33,12 @@
         cursor: pointer;
       }
     
-    #barcode,
     #result {
         margin-top: 12px;
         text-align: center;
         font-weight: bold;
         font-size: 1rem;
       }
-
   </style>
 </head>
 <body>
@@ -48,18 +46,18 @@
   <button id="startBtn">カメラ開始</button>
 
   <div id="result">結果: まだ読み取っていません</div>
+
   <div>  
     <video id="video" playsinline></video>
-    <canvas id="canvas" style="display:none;"></canvas>
+    <canvas id="canvas"></canvas>
   </div>
-　<div class = "button-container">
-    <button id="scanBtn" disabled>1回スキャン</button>
-    <button id="searchBtn" disabled>探す</button>
-  </div>
-  
-  
 
-  <!-- ★ IIFE 版を読み込む -->
+  <div class="button-container">
+    <button id="scanBtn" disabled>1回スキャン（登録）</button>
+    <button id="searchBtn" disabled>探す（連続スキャン）</button>
+  </div>
+
+  <!-- ZXing WASM -->
   <script src="https://cdn.jsdelivr.net/npm/zxing-wasm@3.0.3/dist/iife/reader/index.min.js"></script>
 
   <script>
@@ -67,19 +65,20 @@
 
     const startBtn = document.getElementById("startBtn");
     const scanBtn  = document.getElementById("scanBtn");
+    const searchBtn = document.getElementById("searchBtn");
     const video    = document.getElementById("video");
     const canvas   = document.getElementById("canvas");
     const resultEl = document.getElementById("result");
 
     let stream = null;
-    
-    let scanning = false;    // 連続スキャン中かどうか
-    let targetCode = null;   // scanBtn で読み取った値
-    let searchMode = false;  // searchBtn を押したら true
 
+    let targetCode = null;   // 登録したコード
+    let searchMode = false;  // 探すモード
+    let scanning = false;    // 連続スキャン中かどうか
 
     getZXingModule().then(() => console.log("ZXing ready"));
 
+    // カメラ開始
     startBtn.addEventListener("click", async () => {
       stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "environment" }
@@ -89,6 +88,7 @@
       scanBtn.disabled = false;
     });
 
+    // 1回スキャンして targetCode を登録
     scanBtn.addEventListener("click", async () => {
       const w = video.videoWidth;
       const h = video.videoHeight;
@@ -108,22 +108,45 @@
       if (results.length === 0) {
         resultEl.textContent = "結果: 読み取れませんでした";
       } else {
-        targetCode = results[0].text;   // ← ★ここで保存
+        targetCode = results[0].text;
         resultEl.textContent = "登録: " + targetCode;
-        searchBtn.disabled = false;     // ← 探すボタンを有効化
+        searchBtn.disabled = false;
       }
+    });
 
-      if (searchMode && results.length > 0) {
-      
+    // 連続スキャン関数
+    async function continuousScan() {
+      if (!scanning) return;
+
+      const w = video.videoWidth;
+      const h = video.videoHeight;
+
+      canvas.width = w;
+      canvas.height = h;
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, w, h);
+
+      const imageData = ctx.getImageData(0, 0, w, h);
+
+      const results = await readBarcodesFromImageData(imageData, {
+        formats: ["MicroQRCode", "Codabar", "ITF", "QRCode"]
+      });
+
+      if (results.length > 0) {
         const code = results[0];
+        resultEl.textContent = "スキャン中: " + code.text;
 
-        if (code.text === targetCode) {
-          // ★ 赤枠を描く
+        // 一致したら赤枠
+        if (searchMode && code.text === targetCode) {
+
+          const box = code.position;
+
           ctx.strokeStyle = "red";
           ctx.lineWidth = 8;
 
-          const box = code.position;  // ZXing が返す座標
           if (box) {
+            // ZXing が枠を返した場合
             ctx.beginPath();
             ctx.moveTo(box.topLeft.x, box.topLeft.y);
             ctx.lineTo(box.topRight.x, box.topRight.y);
@@ -131,84 +154,38 @@
             ctx.lineTo(box.bottomLeft.x, box.bottomLeft.y);
             ctx.closePath();
             ctx.stroke();
+          } else {
+            // ZXing が枠を返さないフォーマット用（ITF / Codabar）
+            ctx.strokeRect(w * 0.2, h * 0.2, w * 0.6, h * 0.6);
           }
 
           resultEl.textContent = "一致!: " + targetCode;
-          searchMode = false;  // 1回で終了
-        }
-      }
 
-    
-    });
-
-    async function continuousScan() {
-      if (!scanning) return;
-    
-      const w = video.videoWidth;
-      const h = video.videoHeight;
-    
-      canvas.width = w;
-      canvas.height = h;
-    
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(video, 0, 0, w, h);
-    
-      const imageData = ctx.getImageData(0, 0, w, h);
-    
-      const results = await readBarcodesFromImageData(imageData, {
-        formats: ["MicroQRCode", "Codabar", "ITF", "QRCode"]
-      });
-    
-      if (searchMode && code.text === targetCode) {
-      
-        ctx.strokeStyle = "red";
-        ctx.lineWidth = 8;
-      
-        const box = code.position;
-      
-        if (box) {
-          ctx.beginPath();
-          ctx.moveTo(box.topLeft.x, box.topLeft.y);
-          ctx.lineTo(box.topRight.x, box.topRight.y);
-          ctx.lineTo(box.bottomRight.x, box.bottomRight.y);
-          ctx.lineTo(box.bottomLeft.x, box.bottomLeft.y);
-          ctx.closePath();
-          ctx.stroke();
-        } else {
-          // ★ ZXing が枠を返さないフォーマット用
-          ctx.strokeRect(w * 0.2, h * 0.2, w * 0.6, h * 0.6);
+          scanning = false;
+          searchMode = false;
+          return;
         }
-      
-        resultEl.textContent = "一致!: " + targetCode;
-      
-        scanning = false;
-        searchMode = false;
-        return;
       } else {
         resultEl.textContent = "スキャン中...";
       }
-    
-      // ★ 次のフレームへ
+
       requestAnimationFrame(continuousScan);
     }
 
-
-
-    
+    // 探す（連続スキャン開始）
     searchBtn.addEventListener("click", () => {
       if (!targetCode) {
         alert("先にスキャンして登録してください");
         return;
       }
-    
+
       searchMode = true;
       scanning = true;
-    
-      resultEl.textContent = "探しています: " + targetCode;
-    
-      continuousScan();  // ★ 連続スキャン開始
-    });
 
+      resultEl.textContent = "探しています: " + targetCode;
+
+      continuousScan();
+    });
   </script>
 </body>
 </html>
