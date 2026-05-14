@@ -159,34 +159,31 @@
         formats: ["MicroQRCode", "Codabar", "ITF", "QRCode"]
       });
     
-      if (results.length > 0) {
-        const code = results[0];
-        resultEl.textContent = "スキャン中: " + code.text;
-    
-        // ★ 一致したら赤枠を描いて停止
-        if (searchMode && code.text === targetCode) {
-    
-          const box = code.position;
-          if (box) {
-            ctx.strokeStyle = "red";
-            ctx.lineWidth = 8;
-    
-            ctx.beginPath();
-            ctx.moveTo(box.topLeft.x, box.topLeft.y);
-            ctx.lineTo(box.topRight.x, box.topRight.y);
-            ctx.lineTo(box.bottomRight.x, box.bottomRight.y);
-            ctx.lineTo(box.bottomLeft.x, box.bottomLeft.y);
-            ctx.closePath();
-            ctx.stroke();
-          }
-    
-          resultEl.textContent = "一致!: " + targetCode;
-    
-          // ★ ここで止める（赤枠が残る）
-          // scanning = false;
-          // searchMode = false;
-          // return;
+      if (searchMode && code.text === targetCode) {
+      
+        ctx.strokeStyle = "red";
+        ctx.lineWidth = 8;
+      
+        const box = code.position;
+      
+        if (box) {
+          ctx.beginPath();
+          ctx.moveTo(box.topLeft.x, box.topLeft.y);
+          ctx.lineTo(box.topRight.x, box.topRight.y);
+          ctx.lineTo(box.bottomRight.x, box.bottomRight.y);
+          ctx.lineTo(box.bottomLeft.x, box.bottomLeft.y);
+          ctx.closePath();
+          ctx.stroke();
+        } else {
+          // ★ ZXing が枠を返さないフォーマット用
+          ctx.strokeRect(w * 0.2, h * 0.2, w * 0.6, h * 0.6);
         }
+      
+        resultEl.textContent = "一致!: " + targetCode;
+      
+        scanning = false;
+        searchMode = false;
+        return;
       } else {
         resultEl.textContent = "スキャン中...";
       }
