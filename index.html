@@ -111,17 +111,8 @@
         resultEl.textContent = "登録: " + targetCode;
         searchBtn.disabled = false;     // ← 探すボタンを有効化
       }
-    });
 
-    searchBtn.addEventListener("click", () => {
-      if (!targetCode) {
-        alert("先にスキャンして登録してください");
-        return;
-      }
-      searchMode = true;
-      resultEl.textContent = "探しています: " + targetCode;
-
-      if (searchMode && results.length > 0) {
+          if (searchMode && results.length > 0) {
       
         const code = results[0];
 
@@ -145,6 +136,18 @@
           searchMode = false;  // 1回で終了
         }
       }
+
+    
+    });
+
+    searchBtn.addEventListener("click", () => {
+      if (!targetCode) {
+        alert("先にスキャンして登録してください");
+        return;
+      }
+      searchMode = true;
+      resultEl.textContent = "探しています: " + targetCode;
+
 
     });
 
