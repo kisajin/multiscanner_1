@@ -90,7 +90,7 @@
     let searchMode = false;  // 探すモード
     let scanning = false;    // 連続スキャン中かどうか
     let stopRequested = false; // ループを停止させるフラグ
-
+    let highlightBox = null;
 
     getZXingModule().then(() => console.log("ZXing ready"));
 
@@ -174,25 +174,32 @@
         // 一致したら赤枠
         if (searchMode && code.text === targetCode) {
 
-          const box = code.position;
+          //const box = code.position;
+         
+          highlightBox = code.position || "center";
+          // ★ 一致後の赤枠を毎フレーム描く
+          if (highlightBox) {
 
-          ctx.strokeStyle = "red";
-          ctx.lineWidth = 8;
+            ctx.strokeStyle = "red";
+            ctx.lineWidth = 8;
 
-          if (box) {
-            // ZXing が枠を返した場合
-            ctx.beginPath();
-            ctx.moveTo(box.topLeft.x, box.topLeft.y);
-            ctx.lineTo(box.topRight.x, box.topRight.y);
-            ctx.lineTo(box.bottomRight.x, box.bottomRight.y);
-            ctx.lineTo(box.bottomLeft.x, box.bottomLeft.y);
-            ctx.closePath();
-            ctx.stroke();
-          } else {
-            // ZXing が枠を返さないフォーマット用（ITF / Codabar）
-            ctx.strokeRect(w * 0.2, h * 0.2, w * 0.6, h * 0.6);
+          //if (box) {
+            if (highlightBox !== "center") {
+              const box = highlightBox;
+            
+              // ZXing が枠を返した場合
+              ctx.beginPath();
+              ctx.moveTo(box.topLeft.x, box.topLeft.y);
+              ctx.lineTo(box.topRight.x, box.topRight.y);
+              ctx.lineTo(box.bottomRight.x, box.bottomRight.y);
+              ctx.lineTo(box.bottomLeft.x, box.bottomLeft.y);
+              ctx.closePath();
+              ctx.stroke();
+            } else {
+              // ZXing が枠を返さないフォーマット用（ITF / Codabar）
+              ctx.strokeRect(w * 0.2, h * 0.2, w * 0.6, h * 0.6);
+            }
           }
-
           resultEl.textContent = "一致!: " + targetCode;
 
           //scanning = false;
