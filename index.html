@@ -142,12 +142,26 @@
       }
     
       // ★ 見つかった！
-      targetCode = results[0].text;
+
+      let code = results[0].text;
+      let format = results[0].format;
+
+      // ★ Codabar の場合はスタート／ストップ文字を除去
+      if (format === "Codabar") {
+        code = stripCodabar(code);
+      }
+      
+      targetCode = code;
       resultEl.textContent = "登録: " + targetCode;
       searchBtn.disabled = false;
     }
-
     
+    // codabarのスタート文字、ストップ文字を取り除く関数
+    function stripCodabar(text) {
+      if (text.length <= 2) return text; // 安全策
+      return text.substring(1, text.length - 1);
+    }
+
     // 連続スキャン関数
     async function continuousScan() {
       if (!scanning || stopRequested) return;  // ★ 停止要求があれば終了
