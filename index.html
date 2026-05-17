@@ -186,10 +186,10 @@
       });
 
       if (results.length > 0) {
-        for (const r of results) {
+        for (let r of results) {
 
-          const text = r.text;
-          const format = r.format;        
+          let text = r.text;
+          let format = r.format;        
           //const code = results[0];
           resultEl.textContent = "スキャン中: " + code.text;
 
