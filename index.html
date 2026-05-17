@@ -186,51 +186,62 @@
       });
 
       if (results.length > 0) {
-        const code = results[0];
-        resultEl.textContent = "スキャン中: " + code.text;
+        for (const r of results) {
 
-        // 一致したら赤枠
-        if (searchMode && code.text === targetCode) {
+          const text = r.text;
+          const format = r.format;        
+          //const code = results[0];
+          resultEl.textContent = "スキャン中: " + code.text;
 
-          //const box = code.position;
-         
-          highlightBox = code.position || "center";
-          // ★ 一致後の赤枠を毎フレーム描く
-          if (highlightBox) {
+          // ★ Codabar の場合はスタート/ストップ除去
+          let normalized = text;
+          if (format === "Codabar") {
+            normalized = stripCodabar(text);
+          } 
+          // 一致したら赤枠
+          if (searchMode && normalized === targetCode) {
 
-            ctx.strokeStyle = "red";
-            ctx.lineWidth = 8;
+            //const box = code.position;
+          
+            highlightBox = code.position || "center";
+            // ★ 一致後の赤枠を毎フレーム描く
+            if (highlightBox) {
 
-          //if (box) {
-            if (highlightBox !== "center") {
-              const box = highlightBox;
-            
-              // ZXing が枠を返した場合
-              ctx.beginPath();
-              ctx.moveTo(box.topLeft.x, box.topLeft.y);
-              ctx.lineTo(box.topRight.x, box.topRight.y);
-              ctx.lineTo(box.bottomRight.x, box.bottomRight.y);
-              ctx.lineTo(box.bottomLeft.x, box.bottomLeft.y);
-              ctx.closePath();
-              ctx.stroke();
-            } else {
-              // ZXing が枠を返さないフォーマット用（ITF / Codabar）
-              ctx.strokeRect(w * 0.2, h * 0.2, w * 0.6, h * 0.6);
+              ctx.strokeStyle = "red";
+              ctx.lineWidth = 8;
+
+            //if (box) {
+              if (highlightBox !== "center") {
+                const box = highlightBox;
+              
+                // ZXing が枠を返した場合
+                ctx.beginPath();
+                ctx.moveTo(box.topLeft.x, box.topLeft.y);
+                ctx.lineTo(box.topRight.x, box.topRight.y);
+                ctx.lineTo(box.bottomRight.x, box.bottomRight.y);
+                ctx.lineTo(box.bottomLeft.x, box.bottomLeft.y);
+                ctx.closePath();
+                ctx.stroke();
+              } else {
+                // ZXing が枠を返さないフォーマット用（ITF / Codabar）
+                ctx.strokeRect(w * 0.2, h * 0.2, w * 0.6, h * 0.6);
+              }
             }
+            resultEl.textContent = "一致!: " + targetCode;
+            break; // ★ 他の候補は無視してOK
+            //scanning = false;
+            //searchMode = false;
+            //return;
+          
+          } else {
+            resultEl.textContent = "スキャン中...";
           }
-          resultEl.textContent = "一致!: " + targetCode;
 
-          //scanning = false;
-          //searchMode = false;
-          //return;
+          requestAnimationFrame(continuousScan);
         }
-      } else {
-        resultEl.textContent = "スキャン中...";
       }
-
-      requestAnimationFrame(continuousScan);
     }
-
+      
     // 探す（連続スキャン開始）
     searchBtn.addEventListener("click", () => {
       if (!targetCode) {
