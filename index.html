@@ -237,10 +237,12 @@
             resultEl.textContent = "スキャン中...";
           }
 
-          requestAnimationFrame(continuousScan);
+          
         }
       }
+      requestAnimationFrame(continuousScan);
     }
+    
       
     // 探す（連続スキャン開始）
     searchBtn.addEventListener("click", () => {
