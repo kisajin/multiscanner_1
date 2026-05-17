@@ -186,60 +186,48 @@
       });
 
       if (results.length > 0) {
-        for (let r of results) {
-
-          let text = r.text;
-          let format = r.format;        
-          //const code = results[0];
-          resultEl.textContent = "スキャン中: " + code.text;
-
+      
+        for (const r of results) {
+      
+          const text = r.text;
+          const format = r.format;
+      
+          resultEl.textContent = "スキャン中: " + text;
+      
           // ★ Codabar の場合はスタート/ストップ除去
           let normalized = text;
           if (format === "Codabar") {
             normalized = stripCodabar(text);
-          } 
-          // 一致したら赤枠
+          }
+      
+          // ★ 一致判定
           if (searchMode && normalized === targetCode) {
-
-            //const box = code.position;
-          
-            highlightBox = code.position || "center";
-            // ★ 一致後の赤枠を毎フレーム描く
-            if (highlightBox) {
-
-              ctx.strokeStyle = "red";
-              ctx.lineWidth = 8;
-
-            //if (box) {
-              if (highlightBox !== "center") {
-                const box = highlightBox;
-              
-                // ZXing が枠を返した場合
-                ctx.beginPath();
-                ctx.moveTo(box.topLeft.x, box.topLeft.y);
-                ctx.lineTo(box.topRight.x, box.topRight.y);
-                ctx.lineTo(box.bottomRight.x, box.bottomRight.y);
-                ctx.lineTo(box.bottomLeft.x, box.bottomLeft.y);
-                ctx.closePath();
-                ctx.stroke();
-              } else {
-                // ZXing が枠を返さないフォーマット用（ITF / Codabar）
-                ctx.strokeRect(w * 0.2, h * 0.2, w * 0.6, h * 0.6);
-              }
+      
+            highlightBox = r.position || "center";
+      
+            // ★ 赤枠描画
+            ctx.strokeStyle = "red";
+            ctx.lineWidth = 8;
+      
+            if (highlightBox !== "center") {
+              const box = highlightBox;
+              ctx.beginPath();
+              ctx.moveTo(box.topLeft.x, box.topLeft.y);
+              ctx.lineTo(box.topRight.x, box.topRight.y);
+              ctx.lineTo(box.bottomRight.x, box.bottomRight.y);
+              ctx.lineTo(box.bottomLeft.x, box.bottomLeft.y);
+              ctx.closePath();
+              ctx.stroke();
+            } else {
+              ctx.strokeRect(w * 0.2, h * 0.2, w * 0.6, h * 0.6);
             }
+      
             resultEl.textContent = "一致!: " + targetCode;
             break; // ★ 他の候補は無視してOK
-            //scanning = false;
-            //searchMode = false;
-            //return;
-          
-          } else {
-            resultEl.textContent = "スキャン中...";
           }
-
-          
         }
       }
+
       requestAnimationFrame(continuousScan);
     }
     
